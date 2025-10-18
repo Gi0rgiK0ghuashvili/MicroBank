@@ -1,0 +1,11 @@
+D:\C#\MicroBank\DomainLayer\bin\Debug\net8.0\DomainLayer.deps.json
+D:\C#\MicroBank\DomainLayer\bin\Debug\net8.0\DomainLayer.dll
+D:\C#\MicroBank\DomainLayer\bin\Debug\net8.0\DomainLayer.pdb
+D:\C#\MicroBank\DomainLayer\obj\Debug\net8.0\DomainLayer.GeneratedMSBuildEditorConfig.editorconfig
+D:\C#\MicroBank\DomainLayer\obj\Debug\net8.0\DomainLayer.AssemblyInfoInputs.cache
+D:\C#\MicroBank\DomainLayer\obj\Debug\net8.0\DomainLayer.AssemblyInfo.cs
+D:\C#\MicroBank\DomainLayer\obj\Debug\net8.0\DomainLayer.csproj.CoreCompileInputs.cache
+D:\C#\MicroBank\DomainLayer\obj\Debug\net8.0\DomainLayer.dll
+D:\C#\MicroBank\DomainLayer\obj\Debug\net8.0\refint\DomainLayer.dll
+D:\C#\MicroBank\DomainLayer\obj\Debug\net8.0\DomainLayer.pdb
+D:\C#\MicroBank\DomainLayer\obj\Debug\net8.0\ref\DomainLayer.dll

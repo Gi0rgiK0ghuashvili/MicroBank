@@ -1,0 +1,6 @@
+@MicroBank_HostAddress = http://localhost:5015
+
+GET {{MicroBank_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
