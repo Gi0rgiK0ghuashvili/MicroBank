@@ -6,10 +6,10 @@ namespace InfrastructureLayer.Persistance
 {
     public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) 
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
-            
+
         }
 
 
@@ -43,17 +43,22 @@ namespace InfrastructureLayer.Persistance
                 .HasForeignKey<Customer>(foreignKeyExpression: c => c.AccountId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<Transaction>()
-                .HasOne(navigationExpression: t => t.Sender)
-                .WithOne(navigationExpression: t => t.Transaction)
-                .HasForeignKey<Account>(a => a.TransactionId)
+            modelBuilder.Entity<Customer>()
+                .HasMany(navigationExpression: c => c.Transactions)
+                .WithOne(navigationExpression: t => t.Sender)
+                .HasForeignKey(a => a.SenderId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<Transaction>()
-                .HasOne(navigationExpression: t => t.Recipient)
-                .WithOne(navigationExpression: t => t.Transaction)
-                .HasForeignKey<Account>(a => a.TransactionId)
+            modelBuilder.Entity<Customer>()
+                .HasMany(c => c.Transactions)
+                .WithOne(t => t.Recipient)
+                .HasForeignKey(t => t.RecipientId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Customer>()
+                .Property(c => c.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
             #endregion
 
         }

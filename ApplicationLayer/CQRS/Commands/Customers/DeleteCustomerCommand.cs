@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Customers
 {
-    public record DeleteCustomerCommand(int Id) : IRequest<Result<int>>;
+    public record DeleteCustomerCommand(Guid Id) : IRequest<Result<Guid>>;
 
-    internal class DeleteCustomerCommandHandler : IRequestHandler<DeleteCustomerCommand, Result<int>>
+    internal class DeleteCustomerCommandHandler : IRequestHandler<DeleteCustomerCommand, Result<Guid>>
     {
         private readonly IGenericRepository<Customer> _customers;
         private readonly IUnitOfWork _unitOfWork;
@@ -18,40 +18,40 @@ namespace ApplicationLayer.CQRS.Commands.Customers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<int>> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
+        public async Task<Result<Guid>> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
         {
             try
             {
+                if (request.Id == Guid.Empty)
+                    return Result<Guid>.Fail("Invalid Id provided.", 400);
+
                 var customerFind = await _customers.GetByExpressionAsync(a => a.Id == request.Id);
 
-                if (customerFind.Success)
-                {
-                    var customer = customerFind.Value;
+                if (!customerFind.Success || customerFind.Value == null)
+                    return Result<Guid>.Fail($"Customer not found or already deleted.", 404);
 
-                    customer.UpdateDate = DateTime.UtcNow;
-                    customer.Active = false;
 
-                    var updateStatus = await _customers.UpdateAsync(customer);
-                    if (updateStatus.Success)
-                    {
-                        var savedChanges = await _unitOfWork.SaveChangesAsync();
+                var customer = customerFind.Value;
 
-                        if (savedChanges.Success)
-                            return Result<int>.Succeed(request.Id);
-                        else
-                            return Result<int>.Fail(savedChanges.Message, savedChanges.StatusCode);
-                    }
-                    else
-                        return Result<int>.Fail(updateStatus.Message, updateStatus.StatusCode);
-                }
-                else
-                {
-                    return Result<int>.Fail($"ექაუნთი უკვე დამატებულია. შეტყობინება: {customerFind.Message}", 401);
-                }
+                if (!customer.Active)
+                    return Result<Guid>.Fail("Customer is already deleted.", 400);
+
+                customer.Active = false;
+                customer.UpdateDate = DateTime.UtcNow;
+
+                var updateStatus = await _customers.UpdateAsync(customer);
+                if (!updateStatus.Success)
+                    return Result<Guid>.Fail(updateStatus.Message, updateStatus.StatusCode);
+
+                var savedChanges = await _unitOfWork.SaveChangesAsync();
+                if (!savedChanges.Success)
+                    return Result<Guid>.Fail(savedChanges.Message, savedChanges.StatusCode);
+                
+                return Result<Guid>.Succeed(request.Id);
             }
             catch (Exception ex)
             {
-                return Result<int>.Fail(ex.Message, 500);
+                return Result<Guid>.Fail(ex.Message, 500);
             }
         }
     }

@@ -5,10 +5,10 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Customers
 {
-    public record AddCustomerCommand(Customer Customer) : IRequest<Result<int>>;
+    public record AddCustomerCommand(string Name, string Surname, string Email, decimal Balance, Guid AccountId) : IRequest<Result<Guid>>;
 
 
-    internal class AddCustomerCommandHandler : IRequestHandler<AddCustomerCommand, Result<int>>
+    internal class AddCustomerCommandHandler : IRequestHandler<AddCustomerCommand, Result<Guid>>
     {
         private readonly IGenericRepository<Customer> _customers;
         private readonly IUnitOfWork _unitOfWork;
@@ -19,40 +19,43 @@ namespace ApplicationLayer.CQRS.Commands.Customers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<int>> Handle(AddCustomerCommand request, CancellationToken cancellationToken)
+        public async Task<Result<Guid>> Handle(AddCustomerCommand request, CancellationToken cancellationToken)
         {
             try
             {
-                var customerFind = await _customers.GetByExpressionAsync(a => a.Id == request.Customer.Id);
+                var customerFind = await _customers.GetByExpressionAsync(a => a.Email == request.Email);
 
-                if (!customerFind.Success)
+                if (customerFind.Success)
+                    return Result<Guid>.Fail("Customer with this email already exists.", 400);
+
+                var customer = new Customer
                 {
-                    var addCustomerResult = await _customers.AddAsync(request.Customer);
-                    if (addCustomerResult.Success)
-                    {
-                        var saveChangesResult = await _unitOfWork.SaveChangesAsync();
-                        if (saveChangesResult.Success)
-                        {
-                            return Result<int>.Succeed(request.Customer.Id);
-                        }
-                        else
-                        {
-                            return Result<int>.Fail($"დაფიქსირდა შეცდომა დამატებული მონაცემების შენახვისას. შეტყობინება: {customerFind.Message}", 401);
-                        }
-                    }
-                    else
-                    {
-                        return Result<int>.Fail($"დაფიქსირდა შეცდომა მონაცემების დამატებისას. შეტყობინება: {customerFind.Message}", 401);
-                    }
-                }
-                else
-                {
-                    return Result<int>.Fail($"მომხმარებელი უკვე დამატებულია. შეტყობინება: {customerFind.Message}", 401);
-                }
+                    Id = Guid.NewGuid(),
+                    Active = true,
+                    CreatedDate = DateTime.UtcNow,
+
+                    Name = request.Name,
+                    Surname = request.Surname,
+                    Email = request.Email,
+                    Balance = request.Balance,
+                    AccountId = request.AccountId == Guid.Empty ? Guid.NewGuid() : request.AccountId
+                };
+
+                var addCustomerResult = await _customers.AddAsync(customer);
+                if (!addCustomerResult.Success)
+                    return Result<Guid>.Fail("An error occurred while adding the customer.", 500);
+
+
+                var saveChangesResult = await _unitOfWork.SaveChangesAsync();
+                if (!saveChangesResult.Success)
+                    return Result<Guid>.Fail($"An error occurred while saving the added data.", 500);
+
+                return Result<Guid>.Succeed(customer.Id);
+
             }
             catch (Exception ex)
             {
-                return Result<int>.Fail(ex.Message, 500);
+                return Result<Guid>.Fail(ex.Message, 500);
             }
         }
     }

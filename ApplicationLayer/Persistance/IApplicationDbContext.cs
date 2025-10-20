@@ -1,5 +1,6 @@
 ﻿using DomainLayer.EntityModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace ApplicationLayer.Persistance
 {
@@ -9,6 +10,10 @@ namespace ApplicationLayer.Persistance
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
 
+        DatabaseFacade Database { get; }
+
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+
     }
 }

@@ -8,10 +8,7 @@ namespace DomainLayer.EntityModels
         public byte[] PasswordHash { get; set; }
         public byte[] PasswordSalt { get; set; }
 
-        public int CustomerId { get; set; }
-        public Customer? Customer { get; set; }
-
-        public int TransactionId { get; set; }
-        public Transaction? Transaction { get; set; }
+        public Guid CustomerId { get; set; }
+        public Customer? Customer { get; set; }       
     }
 }

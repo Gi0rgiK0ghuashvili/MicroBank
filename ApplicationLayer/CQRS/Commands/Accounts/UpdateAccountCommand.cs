@@ -5,60 +5,65 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Accounts
 {
-    public record UpdateAccountCommand(Account Account) : IRequest<Result<int>>;
+    public record UpdateAccountCommand(Guid Id, string UserName, string? Password = "", Guid CustomerId = default, bool Active = true) 
+        : IRequest<Result<Guid>>;
 
-    internal class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountCommand, Result<int>>
+    internal class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountCommand, Result<Guid>>
     {
         private readonly IGenericRepository<Account> _accounts;
         private readonly IUnitOfWork _unitOfWork;
 
-        public UpdateAccountCommandHandler(IGenericRepository<Account> accounts, IUnitOfWork unitOfWork)
+        private readonly IPasswordHandler _passwordHandler;
+
+        public UpdateAccountCommandHandler(IGenericRepository<Account> accounts, IUnitOfWork unitOfWork, IPasswordHandler passwordHandler)
         {
             _accounts = accounts;
             _unitOfWork = unitOfWork;
+            _passwordHandler = passwordHandler;
         }
 
-        public async Task<Result<int>> Handle(UpdateAccountCommand request, CancellationToken cancellationToken)
+        public async Task<Result<Guid>> Handle(UpdateAccountCommand request, CancellationToken cancellationToken)
         {
             try
             {
-                var accountFind = await _accounts.GetByExpressionAsync(a => a.Id == request.Account.Id);
+                var accountFind = await _accounts.GetByIdAsync(request.Id);
+                if (!accountFind.Success || accountFind.Value == null)
+                    return Result<Guid>.Fail("Account not found or already deleted.", 400);
 
-                if (accountFind.Success)
+                var checkUserNameResult = await _accounts.GetByExpressionAsync(a => a.UserName == request.UserName);
+                if(checkUserNameResult.Success)
+                    return Result<Guid>.Fail("Account with this username already exists.", 400);
+
+                var account = accountFind.Value;
+
+                account.UpdateDate = DateTime.UtcNow;
+                account.Active = request.Active;
+                account.UserName = request.UserName;
+
+                if(request.CustomerId != Guid.Empty)
+                    account.CustomerId = request.CustomerId;
+
+                if (!string.IsNullOrEmpty(request.Password))
                 {
-                    var account = accountFind.Value;
-
-                    account.UpdateDate = DateTime.UtcNow;
-                    account.Active = request.Account.Active;
-                    account.UserName = request.Account.UserName;
-                    account.CustomerId = request.Account.CustomerId;
-                    account.TransactionId = request.Account.TransactionId;
-
-                    account.PasswordHash = request.Account.PasswordHash;
-                    account.PasswordSalt = request.Account.PasswordSalt;
-                    
-                    var updateStatus = await _accounts.UpdateAsync(account);
-                    if (updateStatus.Success)
-                    {
-                        var savedChanges = await _unitOfWork.SaveChangesAsync();
-
-                        if (savedChanges.Success)
-                            return Result<int>.Succeed(request.Account.Id);
-                        else
-                            return Result<int>.Fail(savedChanges.Message, savedChanges.StatusCode);
-
-                    }
-                    else
-                        return Result<int>.Fail(updateStatus.Message, updateStatus.StatusCode);
+                    _passwordHandler.CreateSaltAndHash(request.Password, out byte[] hash, out byte[] salt);
+                    account.PasswordHash = hash;
+                    account.PasswordSalt = salt;
                 }
-                else
-                {
-                    return Result<int>.Fail($"ექაუნთი უკვე დამატებულია. შეტყობინება: {accountFind.Message}", 401);
-                }
+
+                var updateStatus = await _accounts.UpdateAsync(account);
+                if (!updateStatus.Success)
+                    return Result<Guid>.Fail(updateStatus.Message, updateStatus.StatusCode);
+                
+                var savedChanges = await _unitOfWork.SaveChangesAsync();
+                if (!savedChanges.Success)
+                    return Result<Guid>.Fail(savedChanges.Message, savedChanges.StatusCode);
+                
+                return Result<Guid>.Succeed(request.Id);
+
             }
             catch (Exception ex)
             {
-                return Result<int>.Fail(ex.Message, 500);
+                return Result<Guid>.Fail(ex.Message, 500);
             }
         }
     }

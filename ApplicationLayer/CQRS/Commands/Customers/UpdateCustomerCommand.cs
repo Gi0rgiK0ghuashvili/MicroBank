@@ -5,9 +5,10 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Customers
 {
-    public record UpdateCustomerCommand(Customer Customer) : IRequest<Result<int>>;
+    public record UpdateCustomerCommand(Guid Id, decimal Balance, string Name = "", string Surname = "", string Email = "")
+        : IRequest<Result<Guid>>;
 
-    internal class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustomerCommand, Result<int>>
+    internal class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustomerCommand, Result<Guid>>
     {
         private readonly IGenericRepository<Customer> _customers;
         private readonly IUnitOfWork _unitOfWork;
@@ -18,44 +19,42 @@ namespace ApplicationLayer.CQRS.Commands.Customers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<int>> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
+        public async Task<Result<Guid>> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
         {
             try
             {
-                var customerFind = await _customers.GetByExpressionAsync(a => a.Id == request.Customer.Id);
+                var customerFind = await _customers.GetByExpressionAsync(a => a.Id == request.Id);
 
-                if (customerFind.Success)
-                {
-                    var customer = customerFind.Value;
+                if (!customerFind.Success || customerFind.Value == null)
+                    return Result<Guid>.Fail("Customer not found or already deleted.", 400);
 
-                    customer.UpdateDate = DateTime.UtcNow;
-                    customer.Active = request.Customer.Active;
-                    customer.Name = request.Customer.Name;
-                    customer.Email = request.Customer.Email;
-                    customer.Surname = request.Customer.Surname;
-                    customer.Balance = request.Customer.Balance;
+                var customer = customerFind.Value;
 
-                    var updateStatus = await _customers.UpdateAsync(customer);
-                    if (updateStatus.Success)
-                    {
-                        var savedChanges = await _unitOfWork.SaveChangesAsync();
+                customer.Balance = request.Balance;
+                customer.UpdateDate = DateTime.UtcNow;
 
-                        if (savedChanges.Success)
-                            return Result<int>.Succeed(request.Customer.Id);
-                        else
-                            return Result<int>.Fail(savedChanges.Message, savedChanges.StatusCode);
-                    }
-                    else
-                        return Result<int>.Fail(updateStatus.Message, updateStatus.StatusCode);
-                }
-                else
-                {
-                    return Result<int>.Fail($"ექაუნთი უკვე დამატებულია. შეტყობინება: {customerFind.Message}", 401);
-                }
+                if (!string.IsNullOrEmpty(request.Name))
+                    customer.Name = request.Name;
+
+                if (!string.IsNullOrEmpty(request.Surname))
+                    customer.Surname = request.Surname;
+
+                if (!string.IsNullOrEmpty(request.Email))
+                    customer.Email = request.Email;
+
+                var updateStatus = await _customers.UpdateAsync(customer);
+                if (!updateStatus.Success)
+                    return Result<Guid>.Fail(updateStatus.Message, updateStatus.StatusCode);
+
+                var savedChanges = await _unitOfWork.SaveChangesAsync();
+                if (!savedChanges.Success)
+                    return Result<Guid>.Fail(savedChanges.Message, savedChanges.StatusCode);
+                
+                return Result<Guid>.Succeed(request.Id);
             }
             catch (Exception ex)
             {
-                return Result<int>.Fail(ex.Message, 500);
+                return Result<Guid>.Fail(ex.Message, 500);
             }
         }
     }

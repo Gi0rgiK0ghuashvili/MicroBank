@@ -8,7 +8,7 @@ namespace ApplicationLayer.Interfaces
         public Task<Result> AddAsync(T entity);
         public Task<Result> UpdateAsync(T entity);
         public Task<Result> DeleteAsync(T entity);
-        public Task<Result> GetByIdAsync(int id);
+        public Task<Result<T>> GetByIdAsync(Guid id);
 
         public Task<Result<T>> GetByExpressionAsync(
             Expression<Func<T, bool>> expression, 

@@ -7,29 +7,42 @@ using System.Linq.Expressions;
 
 namespace InfrastructureLayer.Interfaces
 {
+    /// <summary>
+    /// A generic repository implementation for performing CRUD operations on entities.
+    /// Uses Entity Framework Core's DbSet to interact with the database.
+    /// </summary>
+    /// <typeparam name="T">The type of the entity, which must inherit from BaseEntity.</typeparam>
     public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
     {
         private readonly DbSet<T> _dbSet;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenericRepository{T}"/> class.
+        /// </summary>
+        /// <param name="context">The application's database context.</param>
         public GenericRepository(ApplicationDbContext context)
         {
             _dbSet = context.Set<T>();
         }
 
+        /// <summary>
+        /// Asynchronously adds a new entity to the database.
+        /// </summary>
+        /// <param name="entity">The entity to be added.</param>
+        /// <returns>A Result indicating success or failure with a message and optional status code.</returns>
         public async Task<Result> AddAsync(T entity)
         {
             try
             {
                 if (entity == null)
-                    return Result.Fail("მიღებული არგუმენტი არ შეიძლება იყოს null.", 400);
+                    return Result.Fail("The provided argument cannot be null.", 400);
 
                 var addedEntity = await _dbSet.AddAsync(entity);
 
-                if(addedEntity == null)
-                    return Result.Fail("მონაცემების დამატებისასა დაფიქსირდა შეცდომა.", 500);
-
+                if (addedEntity == null)
+                    return Result.Fail("An error occurred while adding the entity.", 500);
                 else
-                    return Result.Succeed("მონაცემები წარმატებით დაემატა.");
+                    return Result.Succeed("Entity successfully added.");
             }
             catch (Exception ex)
             {
@@ -38,24 +51,29 @@ namespace InfrastructureLayer.Interfaces
             }
         }
 
+        /// <summary>
+        /// Asynchronously marks an entity as inactive (soft delete).
+        /// </summary>
+        /// <param name="entity">The entity to be deleted.</param>
+        /// <returns>A Result indicating success or failure with a message and optional status code.</returns>
         public async Task<Result> DeleteAsync(T entity)
         {
             try
             {
                 if (entity == null)
-                    return Result.Fail("მიღებული არგუმენტი არ შეიძლება იყოს null.", 400);
+                    return Result.Fail("The provided argument cannot be null.", 400);
 
                 var removableEntity = await _dbSet.FirstOrDefaultAsync(x => x.Id == entity.Id);
 
-                if(removableEntity == null)
-                    return Result.Fail($"მოთხოვნილი ობიექტის Id-ი ბაზაში ვერ მოიძებნა. Id:{entity.Id}", 400);
+                if (removableEntity == null)
+                    return Result.Fail($"Entity with the given ID not found. Id: {entity.Id}", 400);
 
-                if(!removableEntity.Active)
-                    return Result.Fail($"მოთხოვნილი ობიექტის Id-ით უკვე წაშლილია ბაზაში. Id:{entity.Id}", 400);
+                if (!removableEntity.Active)
+                    return Result.Fail($"Entity with the given ID is already marked as deleted. Id: {entity.Id}", 400);
 
                 removableEntity.Active = false;
 
-                return Result.Succeed("მონაცემები წარმატებით წაიშალა.");
+                return Result.Succeed("Entity successfully deleted.");
             }
             catch (Exception ex)
             {
@@ -63,6 +81,14 @@ namespace InfrastructureLayer.Interfaces
             }
         }
 
+        /// <summary>
+        /// Retrieves a single entity that matches the given expression.
+        /// Supports optional includes and tracking behavior.
+        /// </summary>
+        /// <param name="expression">The filter expression to apply.</param>
+        /// <param name="includes">Comma-separated list of navigation properties to include.</param>
+        /// <param name="trackChanges">Indicates whether to track changes for the entity.</param>
+        /// <returns>A Result containing the found entity or failure info.</returns>
         public async Task<Result<T>> GetByExpressionAsync(Expression<Func<T, bool>> expression, string? includes = null, bool trackChanges = false)
         {
             if (_dbSet == null)
@@ -89,30 +115,40 @@ namespace InfrastructureLayer.Interfaces
                 return Result<T>.Fail();
         }
 
-        public async Task<Result> GetByIdAsync(int id)
+        /// <summary>
+        /// Retrieves an entity by its ID if it is active.
+        /// </summary>
+        /// <param name="id">The unique identifier of the entity.</param>
+        /// <returns>A Result indicating success or failure with a message.</returns>
+        public async Task<Result<T>> GetByIdAsync(Guid id)
         {
             try
             {
-                if (id == null)
-                    return Result.Fail("მიღებული არგუმენტი არ შეიძლება იყოს null.", 400);
-
-                if (id <= 0)
-                    return Result.Fail("მიღებული id-ი უნდა იყოს ნულზე მეტი.", 400);
+                if (id == Guid.Empty)
+                    return Result<T>.Fail("The Id cannot be empty.", 400);
 
                 var addedEntity = await _dbSet.FirstOrDefaultAsync(x => x.Id == id && x.Active == true);
 
                 if (addedEntity == null)
-                    return Result.Fail("მონაცემების დამატებისასა დაფიქსირდა შეცდომა.", 500);
-
-                else
-                    return Result.Succeed("მონაცემები წარმატებით დაემატა.");
+                    return Result<T>.Fail("Entity not found.", 500);
+                
+                return Result<T>.Succeed(addedEntity);
             }
             catch (Exception ex)
             {
-                return Result.Fail(ex.Message);
+                return Result<T>.Fail(ex.Message);
 
             }
         }
+        /// <summary>
+        /// Retrieves a list of entities based on optional filtering, ordering, and limiting parameters.
+        /// </summary>
+        /// <param name="expression">Optional filter expression.</param>
+        /// <param name="includes">Comma-separated list of navigation properties to include.</param>
+        /// <param name="orderBy">Function to order the query.</param>
+        /// <param name="count">Limits the number of records returned.</param>
+        /// <param name="trackChanges">Whether to track entity changes.</param>
+        /// <returns>A Result containing a list of entities or failure info.</returns>
 
         public async Task<Result<IEnumerable<T>>> ListAsync(Expression<Func<T, bool>>? expression = null, string? includes = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, int count = 0, bool trackChanges = false)
         {
@@ -146,19 +182,26 @@ namespace InfrastructureLayer.Interfaces
                 return Result<IEnumerable<T>>.Fail();
         }
 
+        /// <summary>
+        /// Updates an existing entity in the database.
+        /// </summary>
+        /// <param name="entity">The entity to update.</param>
+        /// <returns>A Result indicating success or failure with a message.</returns>
         public async Task<Result> UpdateAsync(T entity)
         {
             try
             {
                 if (entity == null)
-                    return Result.Fail("მიღებული არგუმენტი არ შეიძლება იყოს null.", 400);
+                    return Result.Fail("The provided argument cannot be null.", 400);
 
-                var addedEntity = _dbSet.Update(entity);
+                var updatedEntity = _dbSet.Update(entity);
                 await Task.CompletedTask;
-                if (addedEntity == null)
-                    return Result.Fail("მონაცემების განახლებისას დაფიქსირდა შეცდომა.", 500);
+
+                if (updatedEntity == null)
+                    return Result.Fail("An error occurred while updating the entity.", 500);
                 else
-                    return Result.Succeed("მონაცემები წარმატებით დაემატა.");
+                    return Result.Succeed("Entity successfully updated.");
+
             }
             catch (Exception ex)
             {

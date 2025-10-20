@@ -5,10 +5,10 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Accounts
 {
-    public record DeleteAccountCommand(int Id) : IRequest<Result<int>>;
+    public record DeleteAccountCommand(Guid Id) : IRequest<Result<Guid>>;
 
 
-    internal class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountCommand, Result<int>>
+    internal class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountCommand, Result<Guid>>
     {
         private readonly IGenericRepository<Account> _accounts;
         private readonly IUnitOfWork _unitOfWork;
@@ -19,41 +19,39 @@ namespace ApplicationLayer.CQRS.Commands.Accounts
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<int>> Handle(DeleteAccountCommand request, CancellationToken cancellationToken)
+        public async Task<Result<Guid>> Handle(DeleteAccountCommand request, CancellationToken cancellationToken)
         {
             try
             {
+                if (request.Id == Guid.Empty)
+                    return Result<Guid>.Fail("Invalid Id provided.", 400);
+
                 var accountFind = await _accounts.GetByExpressionAsync(a => a.Id == request.Id);
 
-                if (accountFind.Success)
-                {
-                    var account = accountFind.Value;
+                if (!accountFind.Success || accountFind.Value == null)
+                    return Result<Guid>.Fail($"Account not found or already deleted.", 404);
 
-                    account.UpdateDate = DateTime.UtcNow;
-                    account.Active = false;
+                var account = accountFind.Value;
+                
+                if (!account.Active)
+                    return Result<Guid>.Fail("Account is already deleted.", 400);
 
-                    var updateStatus = await _accounts.UpdateAsync(account);
-                    if (updateStatus.Success)
-                    {
-                        var savedChanges = await _unitOfWork.SaveChangesAsync();
+                account.Active = false;
+                account.UpdateDate = DateTime.UtcNow;
 
-                        if (savedChanges.Success)
-                            return Result<int>.Succeed(request.Id);
-                        else
-                            return Result<int>.Fail(savedChanges.Message, savedChanges.StatusCode);
-
-                    }
-                    else
-                        return Result<int>.Fail(updateStatus.Message, updateStatus.StatusCode);
-                }
-                else
-                {
-                    return Result<int>.Fail($"ექაუნთი უკვე დამატებულია. შეტყობინება: {accountFind.Message}", 401);
-                }
+                var updateStatus = await _accounts.UpdateAsync(account);
+                if (!updateStatus.Success)
+                    return Result<Guid>.Fail(updateStatus.Message, updateStatus.StatusCode);
+                
+                var savedChanges = await _unitOfWork.SaveChangesAsync();
+                if (!savedChanges.Success)
+                    return Result<Guid>.Fail(savedChanges.Message, savedChanges.StatusCode);
+                
+                return Result<Guid>.Succeed(request.Id);
             }
             catch (Exception ex)
             {
-                return Result<int>.Fail(ex.Message, 500);
+                return Result<Guid>.Fail(ex.Message, 500);
             }
         }
     }

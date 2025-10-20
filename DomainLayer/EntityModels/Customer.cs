@@ -1,4 +1,5 @@
 ﻿using DomainLayer.EntityAbstactions;
+using System.ComponentModel.DataAnnotations;
 
 namespace DomainLayer.EntityModels
 {
@@ -9,7 +10,12 @@ namespace DomainLayer.EntityModels
         public string Email { get; set; }
         public decimal Balance { get; set; }
 
-        public int? AccountId { get; set; }
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
+
+        public Guid? AccountId { get; set; }
         public Account? Account { get; set; }
+
+        public ICollection<Transaction>? Transactions { get; set; }
     }
 }
