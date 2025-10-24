@@ -44,13 +44,13 @@ namespace InfrastructureLayer.Persistance
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Customer>()
-                .HasMany(navigationExpression: c => c.Transactions)
+                .HasMany(navigationExpression: c => c.SentTransactions)
                 .WithOne(navigationExpression: t => t.Sender)
                 .HasForeignKey(a => a.SenderId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Customer>()
-                .HasMany(c => c.Transactions)
+                .HasMany(c => c.ReceivedTransactions)
                 .WithOne(t => t.Recipient)
                 .HasForeignKey(t => t.RecipientId)
                 .OnDelete(DeleteBehavior.NoAction);

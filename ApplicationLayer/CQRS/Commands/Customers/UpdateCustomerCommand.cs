@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Customers
 {
-    public record UpdateCustomerCommand(Guid Id, decimal Balance, string Name = "", string Surname = "", string Email = "")
+    public record UpdateCustomerCommand(Guid Id, decimal Balance, string? Name = "", string? Surname = " ", string? Email = " ", string? UpdateBy = " ")
         : IRequest<Result<Guid>>;
 
     internal class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustomerCommand, Result<Guid>>
@@ -41,6 +41,9 @@ namespace ApplicationLayer.CQRS.Commands.Customers
 
                 if (!string.IsNullOrEmpty(request.Email))
                     customer.Email = request.Email;
+
+                if(!string.IsNullOrEmpty(request.UpdateBy))
+                    customer.UpdateBy = request.UpdateBy;
 
                 var updateStatus = await _customers.UpdateAsync(customer);
                 if (!updateStatus.Success)

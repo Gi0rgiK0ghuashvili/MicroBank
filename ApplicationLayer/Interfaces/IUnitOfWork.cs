@@ -2,9 +2,10 @@
 
 namespace ApplicationLayer.Interfaces
 {
-    public interface IUnitOfWork
+    public interface IUnitOfWork : IDisposable
     {
         public Task<Result<bool>> SaveChangesAsync();
+        public void Dispose();
 
         public Task BeginTransactionAsync();
         public Task CommitTransactionAsync();

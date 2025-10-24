@@ -1,7 +1,7 @@
 ﻿using ApplicationLayer.Interfaces;
 using ApplicationLayer.Persistance;
 using DomainLayer;
-using InfrastructureLayer.Interfaces;
+using InfrastructureLayer.Repositories;
 using InfrastructureLayer.Persistance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +19,8 @@ namespace InfrastructureLayer
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IPasswordHandler, PasswordHandler>();
+            services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
             services.AddScoped(typeof(Result< >));
 
             return services;
@@ -26,8 +28,7 @@ namespace InfrastructureLayer
 
         public static IServiceCollection AddDataBase(this IServiceCollection services, string connectionString)
         {
-            services.AddScoped<IApplicationDbContext, ApplicationDbContext>()
-                .AddDbContext<ApplicationDbContext>((options) =>
+            services.AddDbContext<ApplicationDbContext>((options) =>
                 {
                     options.UseSqlServer(connectionString);
 #if DEBUG

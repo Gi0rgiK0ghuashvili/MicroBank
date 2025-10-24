@@ -1,4 +1,5 @@
 D:\C#\MicroBank\InfrastructureLayer\bin\Debug\net8.0\InfrastructureLayer.deps.json
+D:\C#\MicroBank\InfrastructureLayer\bin\Debug\net8.0\InfrastructureLayer.runtimeconfig.json
 D:\C#\MicroBank\InfrastructureLayer\bin\Debug\net8.0\InfrastructureLayer.dll
 D:\C#\MicroBank\InfrastructureLayer\bin\Debug\net8.0\InfrastructureLayer.pdb
 D:\C#\MicroBank\InfrastructureLayer\bin\Debug\net8.0\ApplicationLayer.dll
@@ -14,6 +15,5 @@ D:\C#\MicroBank\InfrastructureLayer\obj\Debug\net8.0\Infrastr.B5BC0072.Up2Date
 D:\C#\MicroBank\InfrastructureLayer\obj\Debug\net8.0\InfrastructureLayer.dll
 D:\C#\MicroBank\InfrastructureLayer\obj\Debug\net8.0\refint\InfrastructureLayer.dll
 D:\C#\MicroBank\InfrastructureLayer\obj\Debug\net8.0\InfrastructureLayer.pdb
-D:\C#\MicroBank\InfrastructureLayer\obj\Debug\net8.0\ref\InfrastructureLayer.dll
-D:\C#\MicroBank\InfrastructureLayer\bin\Debug\net8.0\InfrastructureLayer.runtimeconfig.json
 D:\C#\MicroBank\InfrastructureLayer\obj\Debug\net8.0\InfrastructureLayer.genruntimeconfig.cache
+D:\C#\MicroBank\InfrastructureLayer\obj\Debug\net8.0\ref\InfrastructureLayer.dll

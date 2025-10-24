@@ -21,6 +21,7 @@ namespace MicroBank
                 .AddMediatR_DI()
                 .AddInfrastructure();
 
+
 #region DefaultConfiguration
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

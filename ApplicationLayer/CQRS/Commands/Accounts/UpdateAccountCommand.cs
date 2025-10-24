@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Accounts
 {
-    public record UpdateAccountCommand(Guid Id, string UserName, string? Password = "", Guid CustomerId = default, bool Active = true) 
+    public record UpdateAccountCommand(Guid Id, string UserName, string? Password = "", Guid? CustomerId = default, string? UpdateBy = "") 
         : IRequest<Result<Guid>>;
 
     internal class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountCommand, Result<Guid>>
@@ -36,12 +36,15 @@ namespace ApplicationLayer.CQRS.Commands.Accounts
 
                 var account = accountFind.Value;
 
-                account.UpdateDate = DateTime.UtcNow;
-                account.Active = request.Active;
                 account.UserName = request.UserName;
+                
+                if(!string.IsNullOrEmpty(request.UpdateBy))
+                    account.UpdateBy = request.UpdateBy;
 
-                if(request.CustomerId != Guid.Empty)
-                    account.CustomerId = request.CustomerId;
+                account.UpdateDate = DateTime.UtcNow;
+
+                if(request.CustomerId != null && request.CustomerId.Value != Guid.Empty)
+                    account.CustomerId = request.CustomerId.Value;
 
                 if (!string.IsNullOrEmpty(request.Password))
                 {

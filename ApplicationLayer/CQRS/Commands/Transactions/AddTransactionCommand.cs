@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Transactions
 {
-    public record AddTransactionCommand(Guid SenderId, Guid RecipientId, decimal TransferredAmount)
+    public record AddTransactionCommand(Guid SenderId, Guid RecipientId, decimal TransferredAmount, string? CreatedBy = " ")
         : IRequest<Result<Guid>>;
     internal class AddTransactionCommandHandler : IRequestHandler<AddTransactionCommand, Result<Guid>>
     {

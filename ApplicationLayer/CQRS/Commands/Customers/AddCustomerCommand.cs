@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Customers
 {
-    public record AddCustomerCommand(string Name, string Surname, string Email, decimal Balance, Guid AccountId) : IRequest<Result<Guid>>;
+    public record AddCustomerCommand(string Name, string Surname, string Email, string CreatedBy = "", decimal Balance = 0, Guid? AccountId = default) : IRequest<Result<Guid>>;
 
 
     internal class AddCustomerCommandHandler : IRequestHandler<AddCustomerCommand, Result<Guid>>

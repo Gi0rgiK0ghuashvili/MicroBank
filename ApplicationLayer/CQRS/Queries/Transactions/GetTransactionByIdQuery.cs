@@ -1,13 +1,15 @@
-﻿using ApplicationLayer.Interfaces;
+﻿using ApplicationLayer.CQRS.Converters;
+using ApplicationLayer.CQRS.DTOs;
+using ApplicationLayer.Interfaces;
 using DomainLayer;
 using DomainLayer.EntityModels;
 using MediatR;
 
 namespace ApplicationLayer.CQRS.Queries.Transactions
 {
-    public record GetTransactionByIdQuery(Guid TransactionId) : IRequest<Result<Transaction>>;
+    public record GetTransactionByIdQuery(Guid TransactionId) : IRequest<Result<TransactionDTO>>;
 
-    internal class GetTransactionByIdQueryHandler : IRequestHandler<GetTransactionByIdQuery, Result<Transaction>>
+    internal class GetTransactionByIdQueryHandler : IRequestHandler<GetTransactionByIdQuery, Result<TransactionDTO>>
     {
         private readonly IGenericRepository<Transaction> _transactions;
 
@@ -16,23 +18,25 @@ namespace ApplicationLayer.CQRS.Queries.Transactions
             _transactions = transactions;
         }
 
-        public async Task<Result<Transaction>> Handle(GetTransactionByIdQuery request, CancellationToken cancellationToken)
+        public async Task<Result<TransactionDTO>> Handle(GetTransactionByIdQuery request, CancellationToken cancellationToken)
         {
             try
             {
                 if (request.TransactionId == Guid.Empty)
-                    return Result<Transaction>.Fail("Transaction Id is empty.");
+                    return Result<TransactionDTO>.Fail("Transaction Id is empty.");
 
-                var transaction = await _transactions.GetByIdAsync(request.TransactionId);
+                var transactionResult = await _transactions.GetByIdAsync(request.TransactionId);
 
-                if (transaction == null)
-                    return Result<Transaction>.Fail("Transaction not found.", 404);
+                if (transactionResult == null || transactionResult.Value == default)
+                    return Result<TransactionDTO>.Fail("Transaction not found.", 404);
 
-                return transaction;
+                var transactionDto = transactionResult.Value.ToDTO();
+
+                return Result<TransactionDTO>.Succeed(transactionDto);
             }
             catch (Exception ex)
             {
-                return Result<Transaction>.Fail(ex.Message, 500);
+                return Result<TransactionDTO>.Fail(ex.Message, 500);
             }
         }
     }

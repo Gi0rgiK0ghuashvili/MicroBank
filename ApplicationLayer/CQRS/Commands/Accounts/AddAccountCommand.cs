@@ -2,10 +2,11 @@
 using DomainLayer;
 using DomainLayer.EntityModels;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ApplicationLayer.CQRS.Commands.Accounts
 {
-    public record AddAccountCommand(string UserName, string Password, bool Active = true) : IRequest<Result<Guid>>;
+    public record AddAccountCommand(string UserName, string Password, string CreatedBy = " ") : IRequest<Result<Guid>>;
 
     
     internal class AddAccountCommandHandler : IRequestHandler<AddAccountCommand, Result<Guid>>
@@ -36,14 +37,18 @@ namespace ApplicationLayer.CQRS.Commands.Accounts
                 {
                     Id = Guid.NewGuid(),
                     UserName = request.UserName,
-                    Active = request.Active,
+                    Active = true,
+
+                    CreatedBy = request.CreatedBy,
                     CreatedDate = DateTime.UtcNow,
 
                     PasswordHash = hash,
-                    PasswordSalt = salt
+                    PasswordSalt = salt,
+                    CustomerId = null
                 };
-
+                
                 var addAccountResult = await _accounts.AddAsync(account);
+
                 if (!addAccountResult.Success)
                     return Result<Guid>.Fail("An error occurred while adding the account.", 500);
                 var saveChangesResult = await _unitOfWork.SaveChangesAsync();

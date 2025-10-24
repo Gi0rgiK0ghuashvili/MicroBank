@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ApplicationLayer.CQRS.Commands.Transactions
 {
-    public record UpdateTransactionCommand(Guid TransactionId, decimal TransferredAmount, Guid SenderId = default, Guid RecipientId = default) : IRequest<Result<Guid>>;
+    public record UpdateTransactionCommand(Guid TransactionId, decimal TransferredAmount, Guid? SenderId = default, Guid? RecipientId = default, string? UpdateBy = " ") : IRequest<Result<Guid>>;
 
     internal class UpdateTransactionCommandHandler : IRequestHandler<UpdateTransactionCommand, Result<Guid>>
     {
@@ -30,10 +30,10 @@ namespace ApplicationLayer.CQRS.Commands.Transactions
                 if (request.TransactionId == Guid.Empty)
                     return Result<Guid>.Fail("TransactionId is empty.", 400);
 
-                if (request.SenderId == Guid.Empty)
+                if (request.SenderId == null || request.SenderId == Guid.Empty)
                     return Result<Guid>.Fail("SenderId is empty.", 400);
 
-                if (request.RecipientId == Guid.Empty)
+                if (request.RecipientId == null || request.RecipientId == Guid.Empty)
                     return Result<Guid>.Fail("RecipientId is empty.", 400);
 
                 if (request.SenderId == request.RecipientId)
@@ -57,8 +57,9 @@ namespace ApplicationLayer.CQRS.Commands.Transactions
                 // Check and update sender data
                 Customer? sender = null;
                 Guid senderId = transaction.SenderId;
-                if (request.SenderId != Guid.Empty)
-                    senderId = request.SenderId;
+                if (request.SenderId != null && request.SenderId != Guid.Empty)
+                    senderId = request.SenderId.Value;
+
                 var senderIdResult = await _customers.GetByIdAsync(senderId);
                 if (!senderIdResult.Success || senderIdResult.Value == null)
                     return Result<Guid>.Fail($"Sender customer not found or already deleted.", 404);
@@ -77,8 +78,9 @@ namespace ApplicationLayer.CQRS.Commands.Transactions
                 // Check and update recipient data
                 Customer? recipient = null;
                 Guid recipientId = transaction.RecipientId;
+
                 if (request.RecipientId != Guid.Empty)
-                    recipientId = request.RecipientId;
+                    recipientId = request.RecipientId.Value;
 
                 var recipientIdResult = await _customers.GetByIdAsync(recipientId);
                 if (!recipientIdResult.Success || recipientIdResult.Value == null)
@@ -95,8 +97,8 @@ namespace ApplicationLayer.CQRS.Commands.Transactions
 
                 transaction.UpdateDate = DateTime.UtcNow;
 
-                transaction.SenderId = request.SenderId;
-                transaction.RecipientId = request.RecipientId;
+                transaction.SenderId = request.SenderId.Value;
+                transaction.RecipientId = request.RecipientId.Value;
                 transaction.TransferredAmount = request.TransferredAmount;
 
                 var updateStatus = await _transactions.UpdateAsync(transaction);

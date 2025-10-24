@@ -74,8 +74,8 @@
         /// </summary>
         /// <param name="value">The result value to return.</param>
         /// <returns>A Result&lt;T&gt; marked as successful with the specified value.</returns>
-        public static Result<T> Succeed(T value) =>
-            new Result<T> {Success = true, Value = value, StatusCode = 200 };
+        public static Result<T> Succeed(T value, string? message = null) =>
+            new Result<T> {Success = true, Value = value, StatusCode = 200, Message = message };
 
         /// <summary>
         /// Creates a failed result.
@@ -85,6 +85,6 @@
         /// <param name="value">Optional value to return, typically null or default.</param>
         /// <returns>A Result&lt;T&gt; marked as failed.</returns>
         public static Result<T> Fail(string? message = null, int statusCode = 400, T? value = default)  =>
-            new Result<T> { Success = false, Value = value, StatusCode = statusCode };
+            new Result<T> { Success = false, Value = value, StatusCode = statusCode, Message = message};
     }
 }
